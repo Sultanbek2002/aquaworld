@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AQUA WORLD: Тайны глубин</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="vignette"></div>
+  <div id="hurt"></div>
+  <div id="flash"></div>
+
+  <!-- ================= HUD ================= -->
+  <div id="hud" class="hidden">
+    <div class="hud-tl glass">
+      <div class="coins">🪙 <span id="hCoins">0</span><span id="hExp" class="exp"></span></div>
+      <div class="lvl-row"><span class="lvl">Ур. <b id="hLevel">1</b></span><span id="hXpText" class="small"></span></div>
+      <div class="bar xp"><div id="hXp"></div></div>
+    </div>
+
+    <div class="hud-tc">
+      <div id="compass">
+        <div id="compassMarks"></div>
+        <div id="compassTarget">◆</div>
+        <div class="compass-center"></div>
+      </div>
+      <div id="targetInfo"></div>
+    </div>
+
+    <div class="hud-tr glass">
+      <div id="hZone">Солнечный риф</div>
+      <div class="depth"><span id="hDepth">0</span><small> м</small></div>
+      <div class="small">Предел: <span id="hMaxDepth">55</span> м</div>
+      <div id="hDetector" class="hidden small">📡 Металлоискатель<div class="bar det"><div id="hDetBar"></div></div></div>
+    </div>
+
+    <div class="hud-bl glass">
+      <div class="stat"><span class="lab">🫧 Кислород</span><div class="bar o2"><div id="hO2"></div></div><span id="hO2t" class="val"></span></div>
+      <div class="stat"><span class="lab">❤️ Здоровье</span><div class="bar hp"><div id="hHp"></div></div><span id="hHpt" class="val"></span></div>
+      <div id="hStatus" class="small status"></div>
+    </div>
+
+    <div class="hud-r glass" id="questPanel">
+      <div class="qhead">📜 Задание</div>
+      <div class="qtitle" id="hQTitle"></div>
+      <div id="hQStage" class="qstage"></div>
+      <div class="bar q"><div id="hQBar"></div></div>
+      <div id="hQProg" class="small"></div>
+      <div id="expeditionHud" class="small expedition-hud"></div>
+    </div>
+
+    <div class="hud-bc">
+      <div id="prompt" class="hidden glass">
+        <span class="key">E</span><span id="promptText"></span>
+        <div id="holdBar"><div id="holdFill"></div></div>
+      </div>
+      <div id="lockHint" class="small hidden">Кликните по экрану, чтобы управлять камерой мышью</div>
+    </div>
+
+    <div class="hud-br">
+      <button class="hbtn" data-open="map" title="Карта (M)">🗺️<span>Карта</span></button>
+      <button class="hbtn" data-open="inventory" title="Инвентарь (Tab)">🎒<span>Инвентарь</span></button>
+      <button class="hbtn" data-open="ency" title="Энциклопедия (J)">📖<span>Энциклопедия</span></button>
+      <button class="hbtn" data-open="quests" title="Задания (Q)">📜<span>Задания</span></button>
+      <button class="hbtn" data-open="pause" title="Меню (Esc)">☰<span>Меню</span></button>
+    </div>
+    <div id="crosshair"></div>
+    <div id="fps" class="hidden"></div>
+  </div>
+
+  <div id="banner" class="hidden"><div id="bannerTitle"></div><div id="bannerText"></div></div>
+  <div id="toasts"></div>
+
+  <!-- ================= ЭКРАНЫ ================= -->
+  <section class="screen menu-screen hidden" id="scr-main">
+    <div class="logo">
+      <div class="logo-top">AQUA WORLD</div>
+      <div class="logo-sub">Тайны глубин</div>
+    </div>
+    <div class="menu-buttons">
+      <button class="btn big primary" data-act="play" id="btnPlay">▶ Играть</button>
+      <button class="btn big" data-act="newgame">✦ Новая игра</button>
+      <button class="btn big" data-open="shop">🛒 Магазин</button>
+      <button class="btn big" data-open="ency">📖 Энциклопедия</button>
+      <button class="btn big" data-open="settings">⚙ Настройки</button>
+      <button class="btn big" data-open="help">❔ Управление</button>
+    </div>
+    <div id="mainInfo" class="main-info"></div>
+  </section>
+
+  <section class="screen hidden" id="scr-pause">
+    <div class="window small-win">
+      <h2>Пауза</h2>
+      <div class="menu-buttons">
+        <button class="btn big primary" data-act="resume">▶ Продолжить</button>
+        <button class="btn big" data-open="quests">📜 Задания</button>
+        <button class="btn big" data-open="map">🗺️ Карта</button>
+        <button class="btn big" data-open="inventory">🎒 Инвентарь</button>
+        <button class="btn big" data-open="ency">📖 Энциклопедия</button>
+        <button class="btn big" data-open="settings">⚙ Настройки</button>
+        <button class="btn big" data-act="save">💾 Сохранить</button>
+        <button class="btn big danger" data-act="tomenu">⏏ Выход в меню</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-base">
+    <div class="window wide">
+      <div class="win-head"><h2>🏠 Исследовательская станция «Аква-1»</h2><div class="coins-pill">🪙 <span class="cCoins"></span></div></div>
+      <div class="base-grid">
+        <div class="base-nav">
+          <button class="tile" data-open="quests">📜<b>Доска заданий</b></button>
+          <button class="tile" data-open="shop">🛒<b>Магазин</b></button>
+          <button class="tile" data-open="upgrades">🏗️<b>Улучшения базы</b></button>
+          <button class="tile" data-open="lab">🔬<b>Лаборатория</b></button>
+          <button class="tile" data-open="inventory">🎒<b>Снаряжение</b></button>
+          <button class="tile" data-open="ency">📖<b>Энциклопедия</b></button>
+          <button class="tile" data-open="map">🗺️<b>Карта</b></button>
+          <button class="tile" data-open="settings">⚙<b>Настройки</b></button>
+        </div>
+        <div class="base-main">
+          <div id="baseOverview"></div>
+          <h3>Режим погружения</h3>
+          <div id="modeList" class="mode-list"></div>
+          <h3>🌊 Точка погружения</h3>
+          <div id="divePoints" class="dive-points"></div>
+        </div>
+      </div>
+      <div class="win-foot"><button class="btn danger" data-act="tomenu">⏏ Выход в меню</button></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-shop">
+    <div class="window wide">
+      <div class="win-head"><h2>🛒 Магазин оборудования</h2><div class="coins-pill">🪙 <span class="cCoins"></span></div><button class="close" data-back>✕</button></div>
+      <div id="shopList" class="cards"></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-upgrades">
+    <div class="window wide">
+      <div class="win-head"><h2>🏗️ Улучшения базы</h2><div class="coins-pill">🪙 <span class="cCoins"></span></div><button class="close" data-back>✕</button></div>
+      <div id="upList" class="cards"></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-inventory">
+    <div class="window wide">
+      <div class="win-head"><h2>🎒 Инвентарь и снаряжение</h2><button class="close" data-back>✕</button></div>
+      <div class="inv-grid">
+        <div><h3>Снаряжение</h3><div id="invGear" class="gear-grid"></div></div>
+        <div>
+          <h3>Ресурсы</h3><div id="invRes" class="res-list"></div>
+          <h3>Характеристики</h3><div id="invStats" class="res-list"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-map">
+    <div class="window wide">
+      <div class="win-head"><h2>🗺️ Карта океана</h2><button class="close" data-back>✕</button></div>
+      <canvas id="mapCanvas" width="1070" height="260"></canvas>
+      <p class="small muted">Нажмите на карту, чтобы поставить метку. Компас укажет направление и глубину.</p>
+      <div class="map-route glass">
+        <div id="mapRouteInfo" aria-live="polite">Метка не выбрана</div>
+        <div class="map-route-actions">
+          <button class="btn small" data-act="routebase">🏠 К базе</button>
+          <button class="btn small" data-act="eventroute" id="mapEventRoute">📡 К событию</button>
+          <button class="btn small" data-act="clearroute" id="clearRoute">Снять метку</button>
+          <button class="btn small primary" data-act="followroute" id="followRoute">Плыть к метке</button>
+        </div>
+      </div>
+      <h3>Профиль глубины</h3>
+      <canvas id="profileCanvas" width="1070" height="140"></canvas>
+      <div id="mapLegend" class="legend"></div>
+      <div id="mapDivePoints" class="dive-points"></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-quests">
+    <div class="window wide">
+      <div class="win-head"><h2>📜 Задания</h2><button class="close" data-back>✕</button></div>
+      <div class="tabs" id="qTabs">
+        <button data-tab="active">Активные</button>
+        <button data-tab="available">Доступные</button>
+        <button data-tab="done">Выполненные</button>
+      </div>
+      <label class="small">Категория <select id="questCategory"><option value="all">Все задания</option></select></label>
+      <div id="qList" class="qlist"></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-ency">
+    <div class="window wide">
+      <div class="win-head"><h2>📖 Энциклопедия морских животных</h2><span id="encyCount" class="coins-pill"></span><button class="close" data-back>✕</button></div>
+      <div class="tabs" id="encyFilter"></div>
+      <div class="ency-wrap">
+        <div id="encyGrid" class="ency-grid"></div>
+        <div id="encyDetail" class="ency-detail"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-lab">
+    <div class="window wide">
+      <div class="win-head"><h2>🔬 Лаборатория</h2><div class="coins-pill">🪙 <span class="cCoins"></span></div><button class="close" data-back>✕</button></div>
+      <div id="labContent"></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-settings">
+    <div class="window small-win">
+      <div class="win-head"><h2>⚙ Настройки</h2><button class="close" data-back>✕</button></div>
+      <div class="settings">
+        <label>Громкость <input type="range" id="setVolume" min="0" max="1" step="0.05"></label>
+        <label>Фоновый звук океана <input type="range" id="setAmbient" min="0" max="1" step="0.05"></label>
+        <label>Чувствительность мыши <input type="range" id="setSens" min="0.3" max="2.5" step="0.1"></label>
+        <label class="check"><input type="checkbox" id="setInvert"> Инвертировать ось Y</label>
+        <label class="check"><input type="checkbox" id="setFirst"> Вид от первого лица (клавиша V)</label>
+        <label class="check"><input type="checkbox" id="setFps"> Показывать FPS</label>
+        <label>Персонаж
+          <select id="setCharacter"></select>
+        </label>
+        <p id="setCharacterDesc" class="small muted"></p>
+        <label>Качество графики
+          <select id="setQuality">
+            <option value="low">Низкое</option>
+            <option value="medium">Среднее</option>
+            <option value="high">Высокое</option>
+            <option value="ultra">Ультра</option>
+          </select>
+        </label>
+        <p class="small muted">Тени, bloom, сглаживание и разрешение меняются сразу; количество растений, частиц и животных — после перезагрузки страницы. На слабых компьютерах разрешение снижается автоматически.</p>
+        <button class="btn danger" data-act="reset">🗑 Сбросить весь прогресс</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-help">
+    <div class="window small-win">
+      <div class="win-head"><h2>❔ Управление</h2><button class="close" data-back>✕</button></div>
+      <div class="help">
+        <div><span class="key">W A S D</span> плыть вперёд, влево, назад, вправо</div>
+        <div><span class="key">Пробел</span> подниматься вверх</div>
+        <div><span class="key">Shift</span> опускаться вниз</div>
+        <div><span class="key">Ctrl</span> ускориться (расход кислорода выше)</div>
+        <div><span class="key">Мышь</span> поворот камеры (кликните по экрану)</div>
+        <div><span class="key">E</span> взаимодействие (удерживайте для долгих действий)</div>
+        <div><span class="key">F</span> фонарь</div>
+        <div><span class="key">Tab</span> инвентарь</div>
+        <div><span class="key">M</span> карта · <span class="key">J</span> энциклопедия · <span class="key">Q</span> задания</div>
+        <div><span class="key">V</span> вид от 1-го / 3-го лица · <span class="key">Колесо</span> приближение камеры</div>
+        <div><span class="key">Esc</span> пауза / назад</div>
+        <p class="small muted">Кислород тратится под водой и быстрее на глубине. Поднимитесь к поверхности, найдите кислородную станцию или капсулу — либо вернитесь на базу. Если кислород закончится, спасатели доставят вас на базу, но половина монет экспедиции будет потеряна.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-dialog">
+    <div class="window dialog">
+      <div class="speaker"><div class="avatar">👩‍🔬</div><div><div id="dlgSpeaker" class="small"></div><h2 id="dlgTitle"></h2></div></div>
+      <div id="dlgText" class="dlg-text"></div>
+      <div class="win-foot"><button class="btn primary" data-act="dlgok">Понятно</button></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-confirm">
+    <div class="window small-win">
+      <h2>Подтверждение</h2>
+      <p id="cfText"></p>
+      <div class="win-foot"><button class="btn" data-back>Отмена</button><button class="btn danger" data-act="cfyes">Да</button></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-fail">
+    <div class="window small-win fail">
+      <h2>🚑 Экспедиция прервана</h2>
+      <p id="failText"></p>
+      <div class="win-foot"><button class="btn primary" data-act="failok">Вернуться на базу</button></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-ending">
+    <div class="window dialog ending">
+      <h2>✨ Тайна глубин раскрыта</h2>
+      <div id="endText" class="dlg-text"></div>
+      <div class="win-foot"><button class="btn primary" data-act="endok">Продолжить исследование</button></div>
+    </div>
+  </section>
+
+  <div id="loading">
+    <div class="logo"><div class="logo-top">AQUA WORLD</div><div class="logo-sub">Тайны глубин</div></div>
+    <div id="loadText">Погружаемся…</div>
+  </div>
+
+  <script src="lib/three.min.js"></script>
+  <script>
+    if (!window.THREE) document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
+  </script>
+  <script src="lib/GLTFLoader.js"></script>
+  <script src="lib/SkeletonUtils.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/save.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/graphics.js"></script>
+  <script src="js/models.js"></script>
+  <script src="js/characters.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/creatures.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/quests.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/expansion.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

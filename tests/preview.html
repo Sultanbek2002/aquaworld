@@ -1,0 +1,28 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>AQUA WORLD — visual preview</title>
+<style>html,body,iframe{margin:0;width:100%;height:100%;border:0;overflow:hidden;background:#071d2c}</style>
+<iframe id="preview" title="Предпросмотр игры"></iframe>
+<script>
+// Isolated visual review; never uses or changes the player's saved progress.
+const frame=document.getElementById('preview');
+fetch('../index.html').then(r=>r.text()).then(html=>{
+  html=html.replace('<head>','<head><base href="../">').replace(/<link[^>]*https:\/\/fonts\.googleapis\.com[^>]*>/g,'');
+  html=html.replace('<script src="js/data.js"></'+'script>','<script>(()=>{const data=new Map(); Object.defineProperty(window,"localStorage",{value:{getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,String(v)),removeItem:k=>data.delete(k)}})})();</'+'script><script src="js/data.js"></'+'script>');
+  frame.srcdoc=html;
+});
+const ready=setInterval(()=>{
+  const w=frame.contentWindow;
+  if(!w.document.getElementById('loading')?.classList.contains('hidden')) return;
+  clearInterval(ready);
+  const params=new URLSearchParams(location.search), mode=params.get('view') || 'base';
+  // ?char=lilia|oceana|arachna|guardian|diver выбирает персонажа, ?q=low|medium|high|ultra — качество
+  const ch=params.get('char'), q=params.get('q');
+  if(ch && /^[a-z]+$/.test(ch)) w.eval(`SETTINGS.character='${ch}';`);
+  if(q && /^[a-z]+$/.test(q)) w.eval(`SETTINGS.quality='${q}'; applyQuality();`);
+  w.eval(`Game.startGame(true); S.coins=6000; S.level=6; S.items=ITEMS.map(i=>i.id); S.upgrades=UPGRADES.map(u=>u.id); ['story1','story2','story3','story4'].forEach(id=>S.quests[id]={status:'done',stage:2}); S.equip.sub=false; Game.applyGear(); Game.enterBase(); Expansion.explore();`);
+  if(['reef','wreck','caves','abyss'].includes(mode)) {
+    w.eval(`if('${mode}'==='abyss') {S.equip.sub=true;Game.applyGear();} Game.dive('${mode}'==='reef'?'base':'${mode}'); UI.closeAll(); Player.teleport(${mode==='reef'?'[-8,-3,-60]':mode==='wreck'?'[-26,-62,-442]':mode==='caves'?'[0,-172,-705]':'[0,-231,-870]'}); Player.flashOn=true;`);
+    if(params.get('pos')) w.eval(`Player.teleport([${params.get('pos').split(',').map(Number).join(',')}]); S.equip.drone=false; Game.applyGear();`);
+    if(params.get('yaw')) w.eval(`Player.yaw=${parseFloat(params.get('yaw'))||0}; Player.pitch=${parseFloat(params.get('pitch'))||0.22}; Player.camZoom=${parseFloat(params.get('zoom'))||1};`);
+  } else if(['shop','map','quests','inventory'].includes(mode)) w.eval(`UI.open('${mode}');`);
+},100);
+</script></html>

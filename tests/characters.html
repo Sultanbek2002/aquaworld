@@ -1,0 +1,62 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>AQUA WORLD — персонажи</title>
+<style>
+  html,body{margin:0;background:#06182a;color:#c9f4ff;font:14px system-ui,sans-serif}
+  #bar{position:fixed;top:0;left:0;right:0;padding:8px 12px;display:flex;gap:8px;align-items:center;background:rgba(4,16,30,.8);z-index:2}
+  button{background:#123a5a;color:#dff;border:1px solid #2a6a8a;border-radius:6px;padding:6px 10px;cursor:pointer}
+  button.on{background:#2a7aa8}
+  canvas{display:block;width:100vw;height:100vh}
+</style></head>
+<body>
+<div id="bar"><b>Персонажи</b><span id="btns"></span><span id="info"></span></div>
+<canvas id="c"></canvas>
+<script src="../lib/three.min.js"></script>
+<script src="../js/data.js"></script>
+<script src="../js/save.js"></script>
+<script src="../js/graphics.js"></script>
+<script src="../js/models.js"></script>
+<script src="../js/characters.js"></script>
+<script>
+// Просмотр персонажей спереди, сбоку и сзади; не трогает сохранения игры.
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.9;
+Gfx.buildTextures();
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b2a40);
+scene.add(new THREE.HemisphereLight(0xcff4ff, 0x1a3040, 0.9));
+const key = new THREE.DirectionalLight(0xfff0e0, 1.4); key.position.set(2, 4, 5); scene.add(key);
+const rim = new THREE.DirectionalLight(0x7fd8ff, 0.9); rim.position.set(-3, 2, -4); scene.add(rim);
+const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+const params = new URLSearchParams(location.search);
+let current = params.get('char') || 'lilia', models = [];
+function show(id) {
+  current = id;
+  models.forEach(m => scene.remove(m));
+  models = [0, Math.PI / 2, Math.PI].map((ry, i) => {
+    const m = id === 'diver' ? Models.diver() : Characters.build(id);
+    m.position.x = (i - 1) * 1.6;
+    m.rotation.y = ry;
+    scene.add(m);
+    return m;
+  });
+  document.querySelectorAll('#btns button').forEach(b => b.classList.toggle('on', b.dataset.id === id));
+  document.getElementById('info').textContent = Characters.get(id).name + ' — ' + Characters.get(id).desc;
+}
+document.getElementById('btns').innerHTML = CHARACTERS.map(c => `<button data-id="${c.id}">${c.name}</button>`).join('');
+document.getElementById('btns').addEventListener('click', e => { if (e.target.dataset.id) show(e.target.dataset.id); });
+show(current);
+const zoom = parseFloat(params.get('zoom')) || 1, focusY = parseFloat(params.get('y')), focusX = parseFloat(params.get('x')) || 0;
+function frame(t) {
+  requestAnimationFrame(frame);
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+  const y = isNaN(focusY) ? -0.8 : focusY;
+  cam.position.set(focusX, y + 0.2, 7.5 / zoom); cam.lookAt(focusX, y, 0);
+  Gfx.U.time.value = t / 1000;
+  models.forEach(m => { const u = m.userData.tailU; if (u) { u.ph.value = t / 1000 * 2.5; u.amp.value = 0.35; } });
+  renderer.render(scene, cam);
+}
+requestAnimationFrame(frame);
+</script></body></html>

@@ -1,0 +1,5 @@
+.browser-test*/
+test-output*.html
+test-browser*.log
+test-visual-output.log
+__pycache__/

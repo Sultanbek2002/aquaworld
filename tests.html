@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><title>AQUA WORLD — проверки</title>
+<style>body{background:#071d2c;color:#c9f4ff;font:16px monospace;padding:24px}iframe{width:min(960px,100%);height:540px;border:1px solid #287080}pre{white-space:pre-wrap}</style>
+<h1>AQUA WORLD — проверки</h1><pre id="results">Запуск…</pre>
+<iframe id="frame"></iframe>
+<script>
+const output = document.getElementById('results');
+const frame = document.getElementById('frame');
+// Keep real Save code, with isolated in-memory storage in the child window.
+fetch('index.html').then(r => r.text()).then(html => {
+  html = html.replace(/<link[^>]*https:\/\/fonts\.googleapis\.com[^>]*>/g, '');
+  html = html.replace('<script src="js/data.js"></' + 'script>',
+    '<script>(() => { const data = new Map(); Object.defineProperty(window, "localStorage", {value: {getItem: k => data.get(k) ?? null, setItem: (k,v) => data.set(k,String(v)), removeItem: k => data.delete(k)}}); window.testErrors=[]; const original=console.error; console.error=(...args)=>{testErrors.push(args.map(String).join(" ")); original.apply(console,args);}; window.addEventListener("error",e=>testErrors.push(e.message)); })();</' + 'script><script src="js/data.js"></' + 'script>');
+  frame.srcdoc = html;
+}).catch(e => output.textContent = 'FAIL: ' + e.message);
+let attempts = 0;
+const poll = setInterval(async () => {
+  if (++attempts > 120) { clearInterval(poll); output.textContent = 'FAIL: timeout'; return; }
+  const w = frame.contentWindow;
+  if (!w.document.getElementById('loading')?.classList.contains('hidden')) return;
+  clearInterval(poll);
+  try {
+    output.textContent = w.eval(`(() => {
+      const lines = [];
+      function check(name, fn) { try { if (!fn()) throw new Error('assertion'); lines.push('PASS ' + name); } catch(e) { lines.push('FAIL ' + name + ': ' + e.message); } }
+      Game.startGame(true); UI.closeAll();
+      check('Новая игра на базе', () => Game.atBase && S.coins === 100);
+      S.coins = 200; // Separate fixture for purchase and insufficient-funds checks.
+      check('Недостаточно монет', () => !Game.buyItem('sub').ok && S.coins === 200);
+      check('Покупка ножа', () => Game.buyItem('knife').ok && S.coins === 50 && Game.hasItem('knife'));
+      check('Повторная покупка запрещена', () => !Game.buyItem('knife').ok && S.coins === 50);
+      check('Глубокая зона закрыта', () => !Game.zoneUnlocked(ZONES[1]));
+      Game.enterBase(); Quests.accept('story1', true); UI.closeAll(); Game.dive('base'); UI.closeAll();
+      const probe = Game.groupObjects('probe')[0];
+      Player.teleport(probe.pos.toArray());
+      Game.update(0.05, {e:true}); Game.hold = 2;
+      Game.update(0.05, {e:true});
+      check('Зонд подобран через взаимодействие', () => S.collected.includes('probe') && S.quests.story1.stage === 1);
+      Player.teleport(World.W.poi.base.toArray()); UI.closeAll(); Game.update(0.05, {});
+      check('Первая сюжетная миссия и награда', () => Quests.isDone('story1') && S.coins >= 300 && S.level >= 2);
+      UI.closeAll(); Quests.accept('side_turtle', true); UI.closeAll();
+      const net = Game.groupObjects('turtleNet')[0]; Player.teleport(net.pos.toArray());
+      Game.update(0.05, {e:true}); Game.hold = 3; Game.update(0.05, {e:true});
+      check('Спасение черепахи', () => Quests.isDone('side_turtle') && Creatures.special.questTurtle.state === 'freed');
+      check('Сопровождение после загрузки', () => { S.collected.push('calf'); Creatures.syncWithSave(); return Creatures.special.calf.state === 'follow'; });
+      World.setCoreDone(); Game.objects.find(o => o.repeat).taken = true;
+      Creatures.special.questTurtle.pos.set(80,-5,-100);
+      Game.startGame(true);
+      check('Новая игра сбрасывает храм и ресурсы', () => !World.W.coreDone && Game.objects.filter(o => o.repeat).every(o => !o.taken));
+      check('Спасаемые животные возвращаются на место', () => Creatures.special.questTurtle.state === 'trapped' && Creatures.special.questTurtle.pos.equals(Creatures.special.questTurtle.start));
+      Game.enterBase(); Save.save(); S = defaultState(); Save.load(); Game.startGame(false);
+      check('Продолжение сохранения на базе', () => Game.atBase && UI.top() === 'base');
+      Game.dive('base'); UI.closeAll(); Game.expedition = 200; Save.save(); S = defaultState(); Save.load(); Game.startGame(false);
+      check('Продолжение сохраняет доход экспедиции', () => !Game.atBase && Game.expedition === 200);
+      S.coins = 1000; Game.expedition = 200; UI.closeAll(); Game.fail('test');
+      check('Спасение сохраняет базу и удерживает штраф', () => Game.atBase && S.coins === 900 && Game.expedition === 0);
+      S.items = ITEMS.map(i => i.id); S.upgrades = UPGRADES.map(u => u.id);
+      ['story1','story2','story3','story4'].forEach(id => S.quests[id] = {status:'done',stage:9});
+      S.equip.sub = true;
+      check('Субмарина открывает бездну', () => Game.zoneUnlocked(ZONES[4]));
+      S.equip.sub = false;
+      check('Снятая субмарина не защищает от давления', () => !Game.zoneUnlocked(ZONES[4]) && Game.maxDepth() === 1005);
+      check('Все объекты имеют конечные координаты', () => Game.objects.every(o => o.pos.toArray().every(Number.isFinite)));
+      localStorage.setItem(SAVE_KEY, JSON.stringify({started:true, level:2.5, xp:-5, items:{bad:true}, species:[], quests:{story1:{status:'active',stage:999}}}));
+      Save.load();
+      check('Повреждённое сохранение восстанавливается', () => Array.isArray(S.items) && !Array.isArray(S.species) && S.level === 1 && S.xp === 0 && S.quests.story1.stage === 1);
+      UI.closeAll(); Game.enterBase();
+      return lines.join('\\n');
+    })()`);
+    const navigation = await fetch('tests/navigation.js').then(r => r.text());
+    output.textContent += '\n\n' + await w.eval(navigation);
+    const campaign = await fetch('tests/campaign.js').then(r => r.text());
+    output.textContent += '\n\n' + await w.eval(campaign);
+    const expansion = await fetch('tests/expansion.js').then(r => r.text());
+    output.textContent += '\n\n' + await w.eval(expansion);
+    output.textContent += '\n' + (w.testErrors.length ? 'FAIL Ошибки JavaScript: '+w.testErrors.join('; ') : 'PASS Нет ошибок JavaScript и рендера');
+    document.body.dataset.result = output.textContent.includes('FAIL') ? 'failed' : 'passed';
+    frame.remove();
+  } catch(e) { output.textContent = 'FAIL: ' + e.stack; }
+}, 250);
+</script></html>
