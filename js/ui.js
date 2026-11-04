@@ -24,6 +24,7 @@ const UI = (() => {
   }
   function open(id) {
     if (typeof Mobile !== 'undefined') Mobile.clear();
+    if (id === 'instructions') guidePage = 0;
     const top = stack[stack.length - 1];
     if (top === id) { render(id); return; }
     if (top) show(top, false);
@@ -121,6 +122,32 @@ const UI = (() => {
 
   // ---------- Рендер экранов ----------
   const R = {};
+  let guidePage = 0;
+  R.instructions = () => {
+    const phone = typeof Mobile !== 'undefined' && Mobile.enabled;
+    const steps = [
+      ['🐠', 'Стань исследователем океана', 'Изучай животных, помогай им и выполняй задания. За это ты получишь монеты и опыт. Новые задания помогут разгадать тайну сигнала из глубин.'],
+      ['🏊', 'Научись плавать', phone
+        ? 'Двигай кружок слева, чтобы плыть. Води пальцем по свободному месту экрана, чтобы смотреть вокруг. Держи ↑, чтобы плыть вверх, или ↓, чтобы нырять глубже. Кнопка «Быстрее» включает и выключает ускорение.'
+        : 'Плыви клавишами W A S D. Нажми на мир и двигай мышью, чтобы смотреть вокруг. Пробел — вверх, Shift — вниз. Держи Ctrl, чтобы плыть быстрее.'],
+      ['🤝', 'Бери предметы и помогай', phone
+        ? 'Подплыви к предмету или животному. На экране появится подсказка. Нажми «Взять / помочь». Если заполняется полоска, держи кнопку до конца.'
+        : 'Подплыви к предмету или животному и прочитай подсказку. Нажми E. Если заполняется полоска, держи E до конца.'],
+      ['🫧', 'Следи за воздухом', 'Полоска кислорода показывает, сколько воздуха осталось. Если его мало, плыви к поверхности или возвращайся на базу. На базе воздух и здоровье восстановятся. Не ныряй глубже, чем позволяет твой костюм.'],
+      ['🗺️', 'Начни с первого задания', 'На базе открой задания и выбери «Сигнал из глубин». Выбери место погружения и следуй указателю на компасе. За монеты покупай вещи, чтобы исследовать новые места. ' + (phone ? 'Карта, вещи и настройки находятся в кнопке «Меню».' : 'M открывает карту, Tab — вещи, Q — задания. Esc — пауза.')],
+    ];
+    const step = steps[guidePage];
+    $('guideStep').textContent = `Шаг ${guidePage + 1} из ${steps.length}`;
+    $('guideIcon').textContent = step[0]; $('guideTitle').textContent = step[1]; $('guideText').textContent = step[2];
+    $('guidePrev').disabled = guidePage === 0;
+    $('guideNext').textContent = guidePage === steps.length - 1 ? 'Понятно! ✓' : 'Дальше →';
+  };
+  R.touchmenu = () => {
+    const quest = QUESTS.find(q => q.id === S.tracked);
+    $('touchSummary').textContent = `Уровень ${S.level} · ${S.coins} монет · ${$('hZone').textContent}` +
+      (quest ? `\nЗадание: ${quest.title}` : '') +
+      ($('hStatus').textContent ? `\n${$('hStatus').textContent}` : '');
+  };
   R.main = () => {
     $('btnPlay').textContent = S.started ? '▶ Продолжить' : '▶ Играть';
     $('mainInfo').innerHTML = S.started
@@ -562,6 +589,12 @@ const UI = (() => {
     }
     if (d.dive) { Game.dive(d.dive); return; }
     switch (d.act) {
+      case 'guideprev': guidePage = Math.max(0, guidePage - 1); render('instructions'); break;
+      case 'guidenext': if (guidePage < 4) { guidePage++; render('instructions'); } else back(); break;
+      case 'touchflash': Game.toggleFlashlight(); back(); break;
+      case 'touchview':
+        SETTINGS.firstPerson = !SETTINGS.firstPerson;
+        Save.saveSettings(); Game.applyGear(); back(); break;
       case 'play': Game.startGame(S.started ? false : 'first'); break;
       case 'newgame':
         if (S.started) confirm('Начать новую игру? Весь текущий прогресс будет удалён.', () => Game.startGame(true));

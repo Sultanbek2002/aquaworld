@@ -11,15 +11,13 @@ const Mobile = (() => {
   root.id = 'mobileControls';
   root.hidden = true;
   root.innerHTML = `
-    <div class="touch-hint">Слева — движение · Проведите по миру — обзор</div>
+    <button class="touch-menu" data-open="touchmenu" aria-label="Открыть меню игры">☰ <span>Меню</span></button>
     <div id="touchStick" role="group" aria-label="Джойстик движения"><span id="touchKnob"></span></div>
+    <button data-touch="sprint" class="touch-sprint" aria-pressed="false" aria-label="Включить ускорение">⚡ Быстрее</button>
     <div class="touch-actions">
-      <button data-hold="up" aria-label="Всплывать">↑</button>
-      <button data-hold="down" aria-label="Погружаться">↓</button>
-      <button data-hold="boost" class="touch-boost" aria-label="Ускорение — удерживайте">Ускорение</button>
-      <button data-hold="e" class="touch-use">Действие</button>
-      <button data-touch="flash">Фонарь</button>
-      <button data-touch="view">Камера</button>
+      <button data-hold="up" aria-label="Всплывать">↑<small>Вверх</small></button>
+      <button data-hold="down" aria-label="Погружаться">↓<small>Вниз</small></button>
+      <button data-hold="e" class="touch-use">Взять / помочь</button>
     </div>`;
   document.body.append(root);
   const stick = root.querySelector('#touchStick'), knob = root.querySelector('#touchKnob');
@@ -32,6 +30,7 @@ const Mobile = (() => {
     stickPointer = lookPointer = null;
     knob.style.transform = 'translate(-50%, -50%)';
     root.querySelectorAll('.pressed').forEach(el => el.classList.remove('pressed'));
+    root.querySelector('[data-touch="sprint"]').setAttribute('aria-pressed', 'false');
   }
   function moveStick(e) {
     const rect = stick.getBoundingClientRect(), radius = rect.width * 0.32;
@@ -79,8 +78,11 @@ const Mobile = (() => {
   root.querySelectorAll('[data-touch]').forEach(button => button.addEventListener('click', () => {
     if (!canPlay()) return;
     Sound.init();
-    if (button.dataset.touch === 'flash') Game.toggleFlashlight();
-    else { SETTINGS.firstPerson = !SETTINGS.firstPerson; Save.saveSettings(); Game.applyGear(); }
+    if (button.dataset.touch === 'sprint') {
+      input.boost = !input.boost;
+      button.classList.toggle('pressed', input.boost);
+      button.setAttribute('aria-pressed', String(input.boost));
+    }
   }));
   canvas.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse' || !canPlay() || lookPointer !== null) return;

@@ -217,26 +217,29 @@
     <div class="window small-win">
       <div class="win-head"><h2>⚙ Настройки</h2><button class="close" data-back>✕</button></div>
       <div class="settings">
+        <button class="btn primary" data-open="instructions">🐠 Как играть — короткое обучение</button>
         <label>Громкость <input type="range" id="setVolume" min="0" max="1" step="0.05"></label>
         <label>Фоновый звук океана <input type="range" id="setAmbient" min="0" max="1" step="0.05"></label>
-        <label>Чувствительность мыши <input type="range" id="setSens" min="0.3" max="2.5" step="0.1"></label>
-        <label class="check"><input type="checkbox" id="setInvert"> Инвертировать ось Y</label>
-        <label class="check"><input type="checkbox" id="setFirst"> Вид от первого лица (клавиша V)</label>
-        <label class="check"><input type="checkbox" id="setFps"> Показывать FPS</label>
-        <label>Персонаж
+        <label>Скорость поворота камеры <input type="range" id="setSens" min="0.3" max="2.5" step="0.1"></label>
+        <label class="check"><input type="checkbox" id="setFirst"> Смотреть глазами героя</label>
+        <label>Выбери героя
           <select id="setCharacter"></select>
         </label>
         <p id="setCharacterDesc" class="small muted"></p>
-        <label>Качество графики
+        <label>Как выглядит игра
           <select id="setQuality">
-            <option value="low">Низкое</option>
-            <option value="medium">Среднее</option>
-            <option value="high">Высокое</option>
-            <option value="ultra">Ультра</option>
+            <option value="low">Проще — игра работает быстрее</option>
+            <option value="medium">Обычная картинка</option>
+            <option value="high">Красивая картинка</option>
+            <option value="ultra">Самая красивая — для мощных устройств</option>
           </select>
         </label>
-        <p class="small muted">Тени, bloom, сглаживание и разрешение меняются сразу; количество растений, частиц и животных — после перезагрузки страницы. На слабых компьютерах разрешение снижается автоматически.</p>
-        <button class="btn danger" data-act="reset">🗑 Сбросить весь прогресс</button>
+        <p class="small muted">Если игра тормозит, выбери «Проще». Чтобы все изменения появились, обнови страницу.</p>
+        <details class="extra-settings"><summary>Другие настройки</summary>
+          <label class="check"><input type="checkbox" id="setInvert"> Поворачивать камеру вверх и вниз наоборот</label>
+          <label class="check"><input type="checkbox" id="setFps"> Показывать скорость игры (FPS)</label>
+        </details>
+        <button class="btn danger" data-act="reset">🗑 Начать всё заново</button>
       </div>
     </div>
   </section>
@@ -290,6 +293,35 @@
       <h2>✨ Тайна глубин раскрыта</h2>
       <div id="endText" class="dlg-text"></div>
       <div class="win-foot"><button class="btn primary" data-act="endok">Продолжить исследование</button></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-touchmenu">
+    <div class="window small-win touch-panel">
+      <div class="win-head"><h2>Меню игры</h2><button class="close" data-back aria-label="Закрыть меню">×</button></div>
+      <div id="touchSummary" class="touch-summary"></div>
+      <div class="touch-menu-grid">
+        <button class="btn" data-open="map">🗺️ Карта</button>
+        <button class="btn" data-open="quests">📜 Задания</button>
+        <button class="btn" data-open="inventory">🎒 Вещи</button>
+        <button class="btn" data-open="ency">🐠 Рыбы и животные</button>
+        <button class="btn" data-act="touchflash">🔦 Свет</button>
+        <button class="btn" data-act="touchview">🎥 Сменить вид</button>
+        <button class="btn" data-open="settings">⚙ Настройки</button>
+        <button class="btn" data-open="pause">⏸ Пауза</button>
+      </div>
+      <button class="btn touch-learn" data-open="instructions">🐠 Как играть?</button>
+      <div class="win-foot"><button class="btn primary" data-back>Вернуться в игру</button></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="scr-instructions">
+    <div class="window small-win guide-panel">
+      <div class="win-head"><h2>Как играть</h2><button class="close" data-back aria-label="Закрыть обучение">×</button></div>
+      <div id="guideStep" class="small muted" aria-live="polite"></div>
+      <div id="guideIcon" class="guide-icon" aria-hidden="true"></div>
+      <h3 id="guideTitle"></h3><p id="guideText" class="guide-text"></p>
+      <div class="win-foot"><button class="btn" data-act="guideprev" id="guidePrev">Назад</button><button class="btn primary" data-act="guidenext" id="guideNext">Дальше →</button></div>
     </div>
   </section>
 

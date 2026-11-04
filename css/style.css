@@ -328,3 +328,55 @@ h3 { color: var(--accent); font-size: 15px; margin-top: 14px; letter-spacing: 0.
 @media (max-height: 560px) {
   .hud-r { display: none; }
 }
+
+/* Compact phone HUD: essentials stay visible, everything else is in Menu. */
+.touch-device .hud-br, .touch-device .hud-tl { display: none; }
+.touch-device .hud-tr { top: max(12px, env(safe-area-inset-top)); right: 116px; padding: 6px 10px; }
+.touch-device .hud-tr > .small, .touch-device #hDetector { display: none; }
+.touch-device #hZone { font-size: 11px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.touch-device .depth { font-size: 23px; }
+.touch-device .hud-tc { top: max(14px, env(safe-area-inset-top)); left: 12px; transform: none; width: 120px; }
+.touch-device #compass { width: 120px; }
+.touch-device #targetInfo { font-size: 10px; max-height: 28px; overflow: hidden; }
+.touch-device .hud-bl { top: 80px; bottom: auto; left: 12px; width: min(230px, 60vw); padding: 5px 8px; }
+.touch-device .stat { grid-template-columns: 72px 1fr 28px; gap: 5px; }
+.touch-device .stat .lab, .touch-device .stat .val { font-size: 11px; }
+.touch-device .stat .bar { height: 7px; }
+.touch-device #hStatus { display: none; }
+.touch-device .hud-bc { bottom: 178px; max-width: min(340px, 86vw); }
+.touch-device #prompt { padding: 6px 10px; font-size: 12px; }
+.touch-device #prompt .key { display: none; }
+.touch-device #banner { top: 30%; width: 80vw; }
+.touch-device #bannerTitle { font-size: 19px; }
+.touch-device #bannerText { font-size: 12px; }
+.touch-device #toasts { top: 135px; width: 85vw; }
+.touch-device #toasts > :not(:last-child) { display: none; }
+.touch-menu, .touch-sprint { position: absolute; pointer-events: auto; touch-action: manipulation; min-height: 48px; border: 1px solid #81d9ed; color: #eafcff; background: rgba(4,31,49,.85); border-radius: 18px; font: inherit; font-size: 13px; font-weight: 600; padding: 10px 14px; }
+.touch-menu { top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); }
+.touch-sprint { left: max(22px, env(safe-area-inset-left)); bottom: calc(164px + env(safe-area-inset-bottom)); }
+.touch-sprint.pressed { background: #167789; border-color: #d3ffff; box-shadow: 0 0 0 2px rgba(131,240,255,.3); }
+.touch-actions { grid-template-columns: repeat(2, 66px); gap: 10px; bottom: calc(22px + env(safe-area-inset-bottom)); }
+.touch-actions button { min-height: 64px; border-radius: 24px; }
+.touch-actions small { display: block; font: 11px sans-serif; }
+.touch-actions .touch-use { min-height: 60px; font-size: 14px; }
+.touch-summary { white-space: pre-line; padding: 10px 12px; margin-bottom: 12px; background: rgba(80,180,210,.1); border-radius: 12px; font-size: 13px; line-height: 1.6; }
+.touch-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.touch-menu-grid .btn { min-height: 52px; text-align: left; padding: 10px; font-size: 14px; }
+.touch-help, .extra-settings { margin-top: 14px; font-size: 13px; line-height: 1.6; }
+.touch-help summary, .extra-settings summary { cursor: pointer; padding: 10px 0; }
+.touch-learn { width: 100%; min-height: 48px; margin-top: 12px; }
+.guide-icon { font-size: 50px; text-align: center; margin: 12px 0; }
+.guide-panel h3 { font-size: 22px; margin: 10px 0; }
+.guide-text { font-size: 16px; line-height: 1.7; }
+.guide-panel .btn { min-height: 48px; }
+.extra-settings .check { margin: 12px 0; }
+.touch-device .window { padding: 16px; max-height: calc(100dvh - 24px); }
+.touch-device .close { min-width: 44px; min-height: 44px; }
+.touch-device .settings select { max-width: 100%; min-height: 44px; }
+.touch-device .settings input[type=range] { height: 32px; }
+@media (max-height: 430px) {
+  .touch-device .hud-bl { top: 70px; width: 175px; }
+  .touch-device .hud-bc { bottom: 38px; max-width: 35vw; }
+  .touch-device .hud-tr { padding: 4px 8px; }
+  .touch-device #toasts { top: 12px; width: 35vw; }
+}
