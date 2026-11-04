@@ -280,6 +280,32 @@ h3 { color: var(--accent); font-size: 15px; margin-top: 14px; letter-spacing: 0.
 .ending h2 { color: var(--gold); }
 
 /* ---------- Адаптивность ---------- */
+#mobileControls { position: fixed; inset: 0; z-index: 12; pointer-events: none; user-select: none; -webkit-user-select: none; }
+#mobileControls[hidden] { display: none; }
+#touchStick { position: absolute; left: max(18px, env(safe-area-inset-left)); bottom: max(20px, env(safe-area-inset-bottom)); width: 132px; height: 132px; border-radius: 50%; border: 2px solid rgba(125,225,255,.5); background: rgba(0,25,48,.45); pointer-events: auto; touch-action: none; }
+#touchKnob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; border-radius: 50%; background: rgba(80,210,245,.65); border: 2px solid #bbf4ff; transform: translate(-50%, -50%); }
+.touch-actions { position: absolute; right: max(14px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(2, 62px); gap: 8px; }
+.touch-actions button { min-height: 48px; border-radius: 16px; border: 1px solid #81d9ed; background: rgba(0,30,52,.8); color: white; font-family: inherit; font-size: 12px; font-weight: 600; pointer-events: auto; touch-action: none; }
+.touch-actions button[data-hold="up"], .touch-actions button[data-hold="down"] { font-size: 26px; }
+.touch-actions .touch-use, .touch-actions .touch-boost { grid-column: span 2; background: rgba(0,110,140,.85); }
+.touch-actions button.pressed { background: #198eaa; }
+.touch-hint { position: absolute; bottom: 252px; width: 100%; text-align: center; color: #c2e5ed; font-size: 11px; }
+.touch-device #game { touch-action: none; }
+.touch-device #lockHint { display: none; }
+.touch-device .hud-br { bottom: auto; top: 115px; right: 10px; gap: 4px; }
+.touch-device .hbtn { min-width: 40px; min-height: 44px; padding: 6px; }
+.touch-device .hbtn span { display: none; }
+.touch-device .hud-bl { bottom: 212px; left: 10px; width: min(300px, calc(100vw - 20px)); }
+.touch-device .hud-bc { bottom: 280px; max-width: 90vw; }
+.touch-device .hud-r { display: none; }
+.touch-device .hud-tl, .touch-device .hud-tr { padding: 8px; min-width: 0; }
+.touch-device .hud-tc { top: 175px; max-width: 90vw; }
+@media (max-height: 500px) {
+  .touch-device .hud-tc { top: 12px; width: 30vw; }
+  .touch-device .hud-bl { bottom: 175px; width: 250px; padding: 6px; }
+  .touch-device .hud-bc { bottom: 60px; max-width: 40vw; }
+  .touch-device .touch-hint { display: none; }
+}
 @media (max-width: 900px) {
   .base-grid, .inv-grid, .ency-wrap, .lab-grid { grid-template-columns: 1fr; }
   .hud-r { top: auto; bottom: 150px; transform: none; }

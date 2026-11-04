@@ -120,16 +120,6 @@ const Save = {
     if (S.level < 1 || !Number.isInteger(S.level)) S.level = 1;
     if (!Number.isFinite(S.xp) || S.xp < 0) S.xp = 0;
     if (!isFinite(S.coins) || S.coins < 0) S.coins = 0;
-    // One-time boost requested for the current playthrough. New games still
-    // start at level 1; resetting progress does not repeat this promotion.
-    try {
-      const boostKey = 'aquaworld_level6_once_20261027';
-      if (!localStorage.getItem(boostKey)) {
-        S.level = Math.max(6, S.level);
-        localStorage.setItem(SAVE_KEY, JSON.stringify(S));
-        localStorage.setItem(boostKey, '1');
-      }
-    } catch (e) { /* Continue playing if browser storage is unavailable. */ }
   },
 
   save() {

@@ -268,6 +268,47 @@ const Characters = (() => {
     mat.customProgramCacheKey = () => 'tailBend';
     return mat;
   }
+  // Fine strands and fabric weave add detail without extra draw calls.
+  function hairTex(c) {
+    return canvasTex('hair_' + c.hair, 256, 512, (g, w, h) => {
+      g.fillStyle = '#' + new THREE.Color(c.hair).getHexString(); g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 110; i++) {
+        const x = i * w / 110;
+        g.strokeStyle = i % 3 ? 'rgba(0,0,0,.28)' : c.hairHi;
+        g.globalAlpha = i % 3 ? 0.7 : 0.38;
+        g.lineWidth = i % 5 ? 0.7 : 1.5;
+        g.beginPath(); g.moveTo(x, 0);
+        g.bezierCurveTo(x + 4, h * .3, x - 4, h * .7, x, h); g.stroke();
+      }
+      g.globalAlpha = 1;
+    });
+  }
+  function weaveTex() {
+    return canvasTex('fabric_weave', 128, 128, (g, w, h) => {
+      g.fillStyle = '#888'; g.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 4) for (let x = 0; x < w; x += 4) {
+        g.fillStyle = (x + y) % 8 ? '#aaa' : '#666'; g.fillRect(x, y, 3, 1);
+        g.fillStyle = '#999'; g.fillRect(x, y + 1, 1, 3);
+      }
+    });
+  }
+  function outfitDetails(body, c) {
+    const parts = [];
+    const curve = (points, radius = .006) => parts.push(new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3(points.map(p => new V3(...p))), 18, radius, 4, false));
+    // Shaped seams and embroidered hems follow the torso instead of floating.
+    for (const side of [-1, 1]) {
+      curve([[side*.12,.52,.1],[side*.15,.36,.13],[side*.105,.15,.13],[side*.14,-.06,.12]]);
+      curve([[side*.04,.57,.085],[side*.12,.5,.13],[side*.18,.46,.08]], .008);
+    }
+    if (!c.cropTop) for (let i = 0; i < 5; i++) {
+      const geo = new THREE.SphereGeometry(.009, 8, 6);
+      geo.translate(0, .42 - i * .09, i < 2 ? .2 : .17); parts.push(geo);
+    }
+    const mat = new THREE.MeshStandardMaterial({ color: c.web ? 0xc8202e : c.shell ? 0xa4dfff : 0xe9b7cc, metalness: .3, roughness: .4 });
+    mesh(mergeGeos(parts), mat, null, null, null, body);
+  }
+
   // Колыхание волос: чем ниже прядь, тем сильнее
   function hairSway(mat, top) {
     mat.onBeforeCompile = sh => {
@@ -284,7 +325,8 @@ const Characters = (() => {
 
   // Волосы: шапка + пряди-трубки вдоль спины, объединённые в одну геометрию
   function hair(c, body, headY, headR, long) {
-    const mat = hairSway(new THREE.MeshPhysicalMaterial({ color: c.hair, roughness: 0.55, metalness: 0.05, clearcoat: 0.15, clearcoatRoughness: 0.5, side: THREE.DoubleSide }), headY);
+    const texture = hairTex(c);
+    const mat = hairSway(new THREE.MeshPhysicalMaterial({ map: texture, bumpMap: texture, bumpScale: .003, roughness: 0.46, metalness: 0.05, clearcoat: 0.3, clearcoatRoughness: 0.4, side: THREE.DoubleSide }), headY);
     const parts = [];
     // Шапка волос: сфера без лицевой части + чёлка
     const cap = new THREE.SphereGeometry(headR * 1.08, 28, 18, PI * 0.5 + 0.95, PI * 2 - 1.9, 0, PI * 0.78);
@@ -304,7 +346,7 @@ const Characters = (() => {
       const curve = new THREE.CatmullRomCurve3(pts);
       const tg = new THREE.TubeGeometry(curve, 20, r, 5, false);
       // Пряди сужаются к кончику (6 вершин на кольцо, 21 кольцо)
-      const p = tg.attributes.position, centers = curve.getSpacedPoints(20);
+      const p = tg.attributes.position, centers = curve.getPoints(20);
       for (let i = 0; i < p.count; i++) {
         const ring = Math.min(20, Math.floor(i / 6)), center = centers[ring];
         const taper = 1 - ring / 20 * 0.75;
@@ -327,6 +369,12 @@ const Characters = (() => {
     [-1, 1].forEach(sd => {
       for (let k = 0; k < 3; k++) strand(sd * headR * 0.88, headY + 0.02, 0.04 - k * 0.03, sd * (0.2 + k * 0.03), headY - 0.55 - k * 0.1, 0.1 - k * 0.04, 0.026, k * 2 + sd);
     });
+    // Wisps break up the smooth cap and frame the temples.
+    for (let i = 0; i < 10; i++) {
+      const side = i % 2 ? 1 : -1, k = Math.floor(i / 2);
+      strand(side * headR * .7, headY + .12, .06,
+        side * (headR + .035 + k*.008), headY - .16 - k*.045, .08 - k*.018, .008, i);
+    }
     const geo = mergeGeos(parts);
     const m = mesh(geo, mat, null, null, null, body);
     m.receiveShadow = false;
@@ -396,12 +444,13 @@ const Characters = (() => {
     const torsoPts = [[0.0, -0.2], [0.17, -0.17], [0.185, -0.06], [0.15, 0.1], [0.165, 0.24], [0.195, 0.36], [0.18, 0.46], [0.16, 0.53], [0.08, 0.6], [0.0, 0.62]];
     mesh(lathe(torsoPts.map(p => [p[0] * 0.92, p[1]])), skin, null, null, null, body);
     const topMat = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff, map: topTex(id, c), roughness: 0.55, sheen: new THREE.Color(0xffffff), clearcoat: c.web ? 0.1 : 0.3,
+      color: 0xffffff, map: topTex(id, c), bumpMap: weaveTex(), bumpScale: .003, roughness: 0.55, sheen: new THREE.Color(0xffffff), clearcoat: c.web ? 0.1 : 0.3,
       transparent: c.topOpacity < 1, opacity: c.topOpacity, side: THREE.DoubleSide,
     });
     const topPts = (c.cropTop ? torsoPts.slice(3) : torsoPts).map(p => [p[0] + 0.012, p[1]]);
     const top = mesh(lathe(topPts), topMat, null, null, null, body);
     top.material.map.repeat.set(1, 1);
+    outfitDetails(body, c);
     [-1, 1].forEach(sd => mesh(SPH, topMat, [sd * 0.072, 0.36, 0.09], null, [0.13, 0.12, 0.11], body)); // грудь
     if (c.collar) mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.1, 20, 1, true), topMat, [0, 0.66, 0], null, null, body);
     if (c.pendant) mesh(new THREE.OctahedronGeometry(0.03, 0), new THREE.MeshPhysicalMaterial({ color: c.pendant, emissive: c.pendant, emissiveIntensity: 0.6, roughness: 0.05, clearcoat: 1 }),
@@ -419,6 +468,8 @@ const Characters = (() => {
       mesh(SPH, skin, [0, -0.22, 0], null, [0.065, 0.46, 0.065], a);
       mesh(SPH, skin, [0, -0.5, 0.01], null, [0.055, 0.12, 0.032], a); // кисть
       mesh(lathe([[0.04, 0.03], [0.045, -0.1], [0.05, -0.24], [0.065, -0.34], [0.09, -0.42], [0.105, -0.46]], 20, 1), sleeveMat, [0, 0, 0], null, null, a);
+      const cuffMat = new THREE.MeshStandardMaterial({ color: c.web ? c.ribbons : c.shell ? 0xa4dfff : 0xf2c6d9, metalness: .25, roughness: .4 });
+      mesh(new THREE.TorusGeometry(.1, .006, 4, 24), cuffMat, [0,-.455,0], [PI/2,0,0], null, a);
       if (c.ribbons) mesh(new THREE.PlaneGeometry(0.03, 0.4), new THREE.MeshStandardMaterial({ color: c.ribbons, side: THREE.DoubleSide }), [0, -0.55, -0.05], [0, 0, 0.1 * sd], null, a);
       arms.push(a);
     });
@@ -550,6 +601,13 @@ const Characters = (() => {
     // Торс: широкие плечи, золотая чешуя
     const torso = [[0, -0.22], [0.2, -0.2], [0.21, -0.05], [0.2, 0.1], [0.25, 0.3], [0.29, 0.45], [0.27, 0.56], [0.14, 0.64], [0, 0.66]];
     mesh(lathe(torso, 32, 0.7), gold, null, null, null, body);
+    // Layered abdominal plates and raised edging make the armor readable in motion.
+    for (let i = 0; i < 4; i++) {
+      mesh(new THREE.TorusGeometry(.18 + i*.008, .009, 4, 24, PI), trim,
+        [0, .02 + i*.105, .015], [PI/2,0,0], [1,.82,1], body);
+    }
+    const crestMat = new THREE.MeshPhysicalMaterial({ color: 0x59d8c0, metalness: .4, roughness: .18, clearcoat: .8 });
+    mesh(new THREE.OctahedronGeometry(.045), crestMat, [0,.48,.22], null, [1,1.6,.5], body);
     [-1, 1].forEach(sd => {
       mesh(SPH, gold, [sd * 0.08, 0.4, 0.13], null, [0.2, 0.17, 0.1], body);         // грудные пластины
       mesh(SPH, gold, [sd * 0.29, 0.53, 0], null, [0.2, 0.17, 0.2], body);           // плечи

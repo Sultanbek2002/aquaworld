@@ -42,10 +42,10 @@
   const keys = {};
   let ePressed = false, pauseAt = 0, drag = false;
   const inputState = () => ({
-    f: keys.KeyW || keys.ArrowUp, b: keys.KeyS || keys.ArrowDown,
-    l: keys.KeyA || keys.ArrowLeft, r: keys.KeyD || keys.ArrowRight,
-    up: keys.Space, down: keys.ShiftLeft || keys.ShiftRight,
-    e: keys.KeyE, ePressed, boost: keys.ControlLeft || keys.ControlRight,
+    f: keys.KeyW || keys.ArrowUp || Mobile.input.f, b: keys.KeyS || keys.ArrowDown || Mobile.input.b,
+    l: keys.KeyA || keys.ArrowLeft || Mobile.input.l, r: keys.KeyD || keys.ArrowRight || Mobile.input.r,
+    up: keys.Space || Mobile.input.up, down: keys.ShiftLeft || keys.ShiftRight || Mobile.input.down,
+    e: keys.KeyE || Mobile.input.e, ePressed: ePressed || Mobile.input.ePressed, boost: keys.ControlLeft || keys.ControlRight || Mobile.input.boost,
   });
 
   window.addEventListener('keydown', e => {
@@ -78,7 +78,7 @@
     }
   });
   window.addEventListener('keyup', e => { keys[e.code] = false; });
-  function clearInput() { for (const k in keys) keys[k] = false; ePressed = false; drag = false; }
+  function clearInput() { for (const k in keys) keys[k] = false; ePressed = false; drag = false; Mobile.clear(); }
   window.addEventListener('blur', () => {
     clearInput();
     if (Game.mode === 'play' && !UI.isBlocking()) UI.open('pause');
@@ -90,8 +90,9 @@
     }
   });
 
-  canvas.addEventListener('click', () => {
+  canvas.addEventListener('click', e => {
     Sound.init();
+    if (Mobile.enabled || (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents)) return;
     if (Game.mode === 'play' && !UI.isBlocking() && document.pointerLockElement !== canvas) UI.lockPointer();
   });
   canvas.addEventListener('mousedown', () => { drag = true; });
@@ -132,6 +133,7 @@
     const dt = Math.min(clock.getDelta(), 0.05);
     t += dt;
     const playing = Game.mode === 'play' && !UI.isBlocking();
+    Mobile.update(playing);
     try {
       if (playing) Game.update(dt, inputState());
       else if (Game.mode === 'menu') {
@@ -148,6 +150,7 @@
       if (performance.now() - lastErr > 5000) { lastErr = performance.now(); UI.toast('⚠ Ошибка: ' + e.message, 'bad'); }
     }
     ePressed = false;
+    Mobile.input.ePressed = false;
     // Объекты, созданные во время игры (события, находки), тоже получают каустики
     enhanceT -= dt;
     if (enhanceT <= 0) { enhanceT = 2; Gfx.enhanceScene(scene); }

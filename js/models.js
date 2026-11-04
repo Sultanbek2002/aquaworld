@@ -331,16 +331,30 @@ const Models = (() => {
     part(body, CYL, M(0x333333), [0, 0.6, 0.18], [0.06, 0.08, 0.06], [PI / 2, 0, 0]);
     [-1, 1].forEach(sd => part(body, CYL, M(0xffc21a, { metalness: 0.4, roughness: 0.35 }), [sd * 0.1, 0.25, -0.22], [0.17, 0.62, 0.17]));
     part(body, CYL, M(0x222222), [0, -0.2, 0], [0.48, 0.08, 0.32]);
+    const seam = M(0x7797b2, { roughness: 0.65 });
+    const hardware = M(0xc5d7df, { metalness: 0.75, roughness: 0.3 });
+    // Zipper, chest pocket, utility straps and reinforced joints.
+    part(body, BOX, seam, [0,0.16,0.158], [0.018,0.52,0.012]);
+    part(body, BOX, hardware, [0,0.36,0.17], [0.028,0.04,0.012]);
+    part(body, BOX, suit, [-0.105,0.25,0.166], [0.11,0.13,0.025]);
+    part(body, BOX, seam, [-0.105,0.3,0.182], [0.11,0.012,0.008]);
+    [-1,1].forEach(sd => {
+      part(body, BOX, M(0x101a26), [sd*.18,.18,.12], [.045,.6,.045], [0,0,sd*.12]);
+      part(body, BOX, hardware, [sd*.18,.1,.15], [.06,.06,.02]);
+    });
     const arms = [], legs = [];
     [-1, 1].forEach(sd => {
       const a = new THREE.Group();
       a.position.set(sd * 0.3, 0.45, 0);
       part(a, CYL, suit, [0, -0.3, 0], [0.12, 0.6, 0.12]);
+      part(a, SPH, M(0x101a26), [0,-.32,.025], [.14,.13,.1]);
+      part(a, CYL, seam, [0,-.51,0], [.135,.035,.135]);
       part(a, SPH, M(0x111820), [0, -0.62, 0], [0.13, 0.13, 0.13]);
       body.add(a); arms.push(a);
       const l = new THREE.Group();
       l.position.set(sd * 0.12, -0.25, 0);
       part(l, CYL, suit, [0, -0.32, 0], [0.15, 0.62, 0.15]);
+      part(l, SPH, M(0x101a26), [0,-.43,.05], [.17,.16,.09]);
       part(l, BOX, M(0xffd21a), [0, -0.85, 0.05], [0.22, 0.5, 0.03]);
       body.add(l); legs.push(l);
     });

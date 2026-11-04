@@ -23,6 +23,7 @@ const UI = (() => {
     document.querySelectorAll('.cCoins').forEach(e => { e.textContent = S.coins; });
   }
   function open(id) {
+    if (typeof Mobile !== 'undefined') Mobile.clear();
     const top = stack[stack.length - 1];
     if (top === id) { render(id); return; }
     if (top) show(top, false);
@@ -61,6 +62,7 @@ const UI = (() => {
 
   // Захват мыши; без жеста пользователя браузер откажет — это не ошибка
   function lockPointer() {
+    if (typeof Mobile !== 'undefined' && Mobile.enabled) return;
     try {
       const c = $('game');
       const p = c.requestPointerLock && c.requestPointerLock();
